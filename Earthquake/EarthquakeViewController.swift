@@ -8,52 +8,53 @@
 
 import UIKit
 import MapKit
+import CoreLocation
 
-class EarthquakeViewController: UIViewController {
+class EarthquakeViewController: UIViewController, CLLocationManagerDelegate {
     
-    var earthquake: Earthquake!
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.setLabels()
-        self.setMap()
-        // Do any additional setup after loading the view.
-    }
+    //MARK: - Properties
     
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var magnitudeLabel: UILabel!
     @IBOutlet weak var depthLabel: UILabel!
+    @IBOutlet weak var distanceLabel: UILabel!
     @IBOutlet weak var mapView: MKMapView!
     
-    @IBAction func didTapMoreInfo(sender: AnyObject) {
-        UIApplication.shared.open(URL(string: earthquake.url)!)
+    var earthquake: Earthquake!
+    
+    //MARK: - Initialization
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setLabels()
+        setMap()
     }
+    
+    @IBAction func didTapMoreInfo(sender: AnyObject) {
+        UIApplication.shared.open(earthquake.url)
+    }
+    
+    //MARK: - Private Methods
 
     private func setLabels() {
-        
-        timeLabel.text = earthquake.time
         locationLabel.text = earthquake.place
-        magnitudeLabel.text = earthquake.magnitude
-        depthLabel.text = earthquake.depth
-        
+        timeLabel.text = dateFormatter.string(from: earthquake.time)
+        magnitudeLabel.text = String(earthquake.magnitude).padding(toLength: 4, withPad: "0", startingAt: 0)
+        depthLabel.text = earthquake.depth > 0 ? "\(String(earthquake.depth)) km" : "Unavailable"
+        distanceLabel.text = "\(String(Int((earthquake.location.distance(from: userLocation) / 1000).rounded()))) km"
     }
     
     private func setMap() {
-        
-        let lat = CLLocationDegrees(exactly: earthquake.coords[1])!
-        let lon = CLLocationDegrees(exactly: earthquake.coords[0])!
-        let center = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        
-        let span = MKCoordinateSpan(latitudeDelta: 10.0, longitudeDelta: 10.0)
+        let center = CLLocationCoordinate2D(latitude: earthquake.latitude, longitude: earthquake.longitude)
+        let span = MKCoordinateSpan(latitudeDelta: 8.0, longitudeDelta: 8.0)
         let region = MKCoordinateRegion(center: center, span: span)
         mapView.setRegion(region, animated: true)
         
         let annotation = MKPointAnnotation()
         annotation.coordinate = center
         mapView.addAnnotation(annotation)
-        
     }
-
+    
 }
 

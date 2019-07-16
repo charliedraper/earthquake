@@ -66,8 +66,8 @@
 				EDD2B5A422D3DBF0001352E5 /* EarthquakeTableViewController.swift */,
 				EDD2B5A622D3DE5E001352E5 /* Earthquake.swift */,
 				EDD2B59422D3C25C001352E5 /* Main.storyboard */,
-				EDD2B59722D3C26A001352E5 /* Assets.xcassets */,
 				EDD2B59922D3C26A001352E5 /* LaunchScreen.storyboard */,
+				EDD2B59722D3C26A001352E5 /* Assets.xcassets */,
 				EDD2B59C22D3C26A001352E5 /* Info.plist */,
 			);
 			path = Earthquake;
@@ -304,7 +304,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.charliedraper.Earthquake;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -322,7 +322,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.charliedraper.Earthquake;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

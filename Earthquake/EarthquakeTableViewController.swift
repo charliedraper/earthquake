@@ -7,31 +7,45 @@
 //
 
 import UIKit
+import CoreLocation
 
-class EarthquakeTableViewController: UITableViewController {
+let earthquakeURL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson"
+var userLocation = CLLocation(latitude: 0.0, longitude: 0.0)
+
+class EarthquakeTableViewController: UITableViewController, CLLocationManagerDelegate {
+
+    //MARK: - Properties
     
-    //MARK: Properties
-    
-    //Array of earthquake objects
     private var earthquakes = [Earthquake]()
+    let locationManager = CLLocationManager()
+    
+    //MARK: - Initialization
 
-    //Load earthquakes once the view loads
     override func viewDidLoad() {
         super.viewDidLoad()
         self.loadEarthquakes()
         
-        //Implement a refresh control when the user swipes up
+        //Obtain the user's location if they consent
+        if (CLLocationManager.locationServicesEnabled())
+        {
+            locationManager.delegate = self
+            locationManager.desiredAccuracy = kCLLocationAccuracyBest
+            locationManager.requestAlwaysAuthorization()
+            locationManager.startUpdatingLocation()
+        }
+        
+        //Refresh the page when the user swipes up
         let refreshControl = UIRefreshControl()
-        refreshControl.addTarget(self, action: #selector(refreshPage), for: .valueChanged)
+        refreshControl.addTarget(self, action: #selector(loadEarthquakes), for: .valueChanged)
         tableView.refreshControl = refreshControl
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let locValue: CLLocationCoordinate2D = manager.location?.coordinate else { return }
+        userLocation = CLLocation(latitude: locValue.latitude, longitude: locValue.longitude)
     }
 
     // MARK: - Table view data source
-
-    //Our table will have one section, displaying all of the earthquakes
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
 
     //The number of rows in the section will equal the number of earthquakes we fetch
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -44,59 +58,16 @@ class EarthquakeTableViewController: UITableViewController {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "EarthquakeTableViewCell", for: indexPath) as? EarthquakeTableViewCell else {
             fatalError("Dequed cell is not an instance of ETVC")
         }
-        
         let earthquake = earthquakes[indexPath.row]
         
-        cell.timeLabel.text = earthquake.time
-        cell.magLabel.text = earthquake.magnitude
-        cell.locLabel.text = earthquake.place
-        cell.magImageView.image = earthquake.level
-        
+        cell.buildCell(from: earthquake)
         return cell
     }
 
-    /*
-    // Override to support conditional editing of the table view.
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the specified item to be editable.
-        return true
-    }
-    */
-
-    /*
-    // Override to support editing the table view.
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            // Delete the row from the data source
-            tableView.deleteRows(at: [indexPath], with: .fade)
-        } else if editingStyle == .insert {
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }    
-    }
-    */
-
-    /*
-    // Override to support rearranging the table view.
-    override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
-
-    }
-    */
-
-    /*
-    // Override to support conditional rearranging of the table view.
-    override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the item to be re-orderable.
-        return true
-    }
-    */
-
-    
     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
     //Function allows us to pass an earthquake's data to the next view controller
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
         let nextVC = segue.destination as! EarthquakeViewController
         
         let selectedRow = tableView.indexPathForSelectedRow!.row
@@ -106,12 +77,11 @@ class EarthquakeTableViewController: UITableViewController {
     }
     
     
-    //MARK: Private Methods
+    //MARK: - Private Methods
     
-    private func loadEarthquakes() {
-        
-        //Fetches earthquake data from
-        let url = URL(string: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson")
+    @objc private func loadEarthquakes() {
+        //Fetches earthquake data from URL
+        let url = URL(string: earthquakeURL)
         let task = URLSession.shared.dataTask(with: url!) { (data, response, error) in
                 
             if let data = data {
@@ -120,33 +90,38 @@ class EarthquakeTableViewController: UITableViewController {
                     let result = try JSONDecoder().decode(Result.self, from: data)
                     self.buildArray(earthquakes: result.features)
                     
-                    //Once the array has been built, reload our table data and stop refreshing if need be
+                    //Once the array has been built, reload our table data and stop refreshing the data
                     DispatchQueue.main.async{
                         self.tableView.reloadData()
                         self.refreshControl?.endRefreshing()
                     }
-                    
                 } catch let error as NSError {
                     print(error.localizedDescription)
                 }
-                
             } else if let error = error {
                 print(error.localizedDescription)
             }
-            
         }
-        
         task.resume()
     }
     
+    //Appends all earthquake features to a new array of Earthquake objects
     private func buildArray(earthquakes: [Feature]) {
         for earthquake in earthquakes {
             self.earthquakes.append(Earthquake(earthquake: earthquake))
         }
     }
     
-    @objc func refreshPage() {
-        self.loadEarthquakes()
-    }
 }
 
+//Extension to build an Earthquake Table View Cell's labels
+extension EarthquakeTableViewCell {
+    
+    func buildCell(from earthquake: Earthquake) {
+        self.timeLabel.text = dateFormatter.string(from: earthquake.time)
+        self.magLabel.text = String(earthquake.magnitude).padding(toLength: 4, withPad: "0", startingAt: 0)
+        self.locLabel.text = earthquake.place
+        self.magImageView.image = earthquake.level
+    }
+    
+}
